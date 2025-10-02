@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blockchain Rewards Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        input, button, select { margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background: #007bff; color: #fff; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 16px; padding: 12px; background: #e9ecef; border-radius: 4px; }
+        .user-id { font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Blockchain Rewards Demo</h2>
+    <div>
+        <button onclick="createUser()">Create New User</button>
+        <div id="userResult" class="result"></div>
+    </div>
+    <hr>
+    <div>
+        <label>User ID:</label>
+        <input type="text" id="userId" placeholder="Paste user ID here" style="width: 100%">
+    </div>
+    <div>
+        <button onclick="getBalance()">Check Balance</button>
+        <div id="balanceResult" class="result"></div>
+    </div>
+    <hr>
+    <div>
+        <label>Earn Tokens:</label><br>
+        <input type="number" id="earnAmount" value="1" min="1">
+        <button onclick="earnTokens()">Earn</button>
+        <div id="earnResult" class="result"></div>
+    </div>
+    <hr>
+    <div>
+        <label>Spend Tokens:</label><br>
+        <input type="text" id="itemName" placeholder="Item name">
+        <input type="number" id="spendAmount" value="1" min="1">
+        <button onclick="spendTokens()">Spend</button>
+        <div id="spendResult" class="result"></div>
+    </div>
+</div>
+<script>
+const apiBase = "http://localhost:5000";
+
+function createUser() {
+    fetch(apiBase + "/user/new")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("userId").value = data.user_id;
+            document.getElementById("userResult").innerHTML = `New user created: <span class='user-id'>${data.user_id}</span> (Balance: ${data.balance})`;
+        });
+}
+
+function getBalance() {
+    const userId = document.getElementById("userId").value.trim();
+    if (!userId) return alert("Enter a user ID");
+    fetch(apiBase + `/rewards/balance?user_id=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById("balanceResult").innerText = data.error;
+            } else {
+                document.getElementById("balanceResult").innerText = `User ${data.user_id} balance: ${data.balance}`;
+            }
+        });
+}
+
+function earnTokens() {
+    const userId = document.getElementById("userId").value.trim();
+    const amount = parseInt(document.getElementById("earnAmount").value);
+    if (!userId || !amount) return alert("Enter user ID and amount");
+    fetch(apiBase + "/rewards/earn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, amount })
+    })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("earnResult").innerText = data.message + ` (Balance: ${data.balance})`;
+        });
+}
+
+function spendTokens() {
+    const userId = document.getElementById("userId").value.trim();
+    const item = document.getElementById("itemName").value.trim();
+    const cost = parseInt(document.getElementById("spendAmount").value);
+    if (!userId || !item || !cost) return alert("Enter user ID, item, and cost");
+    fetch(apiBase + "/rewards/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, item, cost })
+    })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("spendResult").innerText = data.message ? data.message + ` (Balance: ${data.balance})` : data.error;
+        });
+}
+</script>
+</body>
+</html>
