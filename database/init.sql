@@ -76,3 +76,77 @@ VALUES (
     '+1234567890', 
     'Test User'
 ) ON CONFLICT DO NOTHING;
+
+-- Create daily_objectives table
+CREATE TABLE IF NOT EXISTS daily_objectives (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    requirement INTEGER NOT NULL,
+    reward_amount INTEGER NOT NULL,
+    icon VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create user_objective_progress table
+CREATE TABLE IF NOT EXISTS user_objective_progress (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(userid) ON DELETE CASCADE,
+    objective_id INTEGER REFERENCES daily_objectives(id) ON DELETE CASCADE,
+    current_progress INTEGER DEFAULT 0,
+    is_completed BOOLEAN DEFAULT false,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, objective_id, date)
+);
+
+-- Create achievements table
+CREATE TABLE IF NOT EXISTS achievements (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    requirement_type VARCHAR(100) NOT NULL, -- 'feature_usage', 'steps', 'exercise', etc.
+    requirement_value VARCHAR(255), -- feature name or numeric value
+    reward_amount INTEGER NOT NULL,
+    icon VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create user_achievements table
+CREATE TABLE IF NOT EXISTS user_achievements (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(userid) ON DELETE CASCADE,
+    achievement_id INTEGER REFERENCES achievements(id) ON DELETE CASCADE,
+    unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, achievement_id)
+);
+
+-- Create additional indexes for gamification tables
+CREATE INDEX IF NOT EXISTS idx_user_objective_progress_user_date ON user_objective_progress(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_user_objective_progress_objective ON user_objective_progress(objective_id);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_achievement ON user_achievements(achievement_id);
+
+-- Insert default daily objectives
+INSERT INTO daily_objectives (name, description, requirement, reward_amount, icon) VALUES
+('Complete 10k Steps', 'Walk 10,000 steps to stay active', 10000, 50, 'footprints'),
+('Exercise for 30 Minutes', 'Complete 30 minutes of exercise', 30, 75, 'dumbbell'),
+('Drink 8 Glasses of Water', 'Stay hydrated by drinking 8 glasses of water', 8, 25, 'droplets'),
+('Sleep 8 Hours', 'Get a good night rest with 8 hours of sleep', 8, 40, 'moon'),
+('Meditate for 10 Minutes', 'Take time for mindfulness and meditation', 10, 35, 'brain')
+ON CONFLICT DO NOTHING;
+
+-- Insert default achievements
+INSERT INTO achievements (name, description, requirement_type, requirement_value, reward_amount, icon) VALUES
+('First Steps', 'Try out the step tracking feature', 'feature_usage', 'step_tracking', 100, 'footprints'),
+('Workout Warrior', 'Complete your first exercise session', 'feature_usage', 'exercise_tracking', 100, 'dumbbell'),
+('Sleep Scholar', 'Log your first sleep session', 'feature_usage', 'sleep_tracking', 100, 'moon'),
+('Hydration Hero', 'Track your first water intake', 'feature_usage', 'water_tracking', 100, 'droplets'),
+('Mindful Master', 'Complete your first meditation session', 'feature_usage', 'meditation', 100, 'brain'),
+('Step Master', 'Walk 100,000 total steps', 'total_steps', '100000', 500, 'footprints'),
+('Exercise Expert', 'Complete 50 exercise sessions', 'total_exercises', '50', 500, 'dumbbell'),
+('Consistency King', 'Complete daily objectives for 7 days in a row', 'streak', '7', 1000, 'sparkles')
+ON CONFLICT DO NOTHING;

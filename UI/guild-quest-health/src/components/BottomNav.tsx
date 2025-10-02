@@ -1,4 +1,4 @@
-import { Home, Dumbbell, Trophy, Award, LogOut } from "lucide-react";
+import { Home, Dumbbell, Trophy, Award, Gift, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { icon: Home, label: "Dashboard", path: "/" },
   { icon: Dumbbell, label: "Training", path: "/training" },
+  { icon: Gift, label: "Rewards", path: "/rewards" },
   { icon: Trophy, label: "Leagues", path: "/leagues" },
   { icon: Award, label: "Trophies", path: "/trophies" },
 ];

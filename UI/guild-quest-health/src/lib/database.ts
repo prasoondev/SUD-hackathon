@@ -183,6 +183,129 @@ class DatabaseService {
     }
   }
 
+  // Daily Objectives methods
+  async getDailyObjectives(): Promise<{ success: boolean; objectives?: any[]; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/objectives/daily`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to fetch daily objectives' };
+      }
+
+      return { success: true, objectives: data.objectives };
+    } catch (error) {
+      console.error('Error fetching daily objectives:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  async claimObjectiveReward(objectiveId: number): Promise<{ success: boolean; message?: string; newBalance?: number; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/objectives/claim/${objectiveId}`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to claim objective reward' };
+      }
+
+      return { success: true, message: data.message, newBalance: data.new_balance };
+    } catch (error) {
+      console.error('Error claiming objective reward:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  async updateObjectiveProgress(objectiveId: number, progress: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/objectives/progress`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+        body: JSON.stringify({ objectiveId, progress }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to update objective progress' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating objective progress:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  // Achievements methods
+  async getAchievements(): Promise<{ success: boolean; achievements?: any[]; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/achievements`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to fetch achievements' };
+      }
+
+      return { success: true, achievements: data.achievements };
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  async unlockAchievement(achievementId: number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/achievements/unlock/${achievementId}`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to unlock achievement' };
+      }
+
+      return { success: true, message: data.message };
+    } catch (error) {
+      console.error('Error unlocking achievement:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  async claimAchievementReward(achievementId: number): Promise<{ success: boolean; message?: string; newBalance?: number; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/achievements/claim/${achievementId}`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Failed to claim achievement reward' };
+      }
+
+      return { success: true, message: data.message, newBalance: data.new_balance };
+    } catch (error) {
+      console.error('Error claiming achievement reward:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
   logout(): void {
     this.token = null;
     localStorage.removeItem('auth_token');

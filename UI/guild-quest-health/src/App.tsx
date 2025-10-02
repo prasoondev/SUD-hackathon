@@ -13,6 +13,7 @@ import StrengthExercises from "./pages/StrengthExercises";
 import YogaExercises from "./pages/YogaExercises";
 import SitupsExercise from "./pages/SitupsExercise";
 import GenericExercise from "./pages/GenericExercise";
+import Rewards from "./pages/Rewards";
 import Leagues from "./pages/Leagues";
 import Trophies from "./pages/Trophies";
 import NotFound from "./pages/NotFound";
@@ -52,6 +53,11 @@ const App = () => (
               <Route path="/training/yoga" element={
                 <ProtectedRoute>
                   <YogaExercises />
+                </ProtectedRoute>
+              } />
+              <Route path="/rewards" element={
+                <ProtectedRoute>
+                  <Rewards />
                 </ProtectedRoute>
               } />
               <Route path="/exercise/situps" element={

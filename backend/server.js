@@ -165,6 +165,9 @@ app.post('/api/auth/register', validateRegistration, async (req, res) => {
 
     const user = result.rows[0];
 
+    // Create blockchain ID for the new user
+    const blockchainId = await getOrCreateBlockchainId(user.userid);
+
     // Generate JWT token
     const token = jwt.sign(
       { userid: user.userid, email: user.email },
@@ -176,7 +179,8 @@ app.post('/api/auth/register', validateRegistration, async (req, res) => {
       success: true,
       message: 'User created successfully',
       user: user,
-      token: token
+      token: token,
+      blockchain_id: blockchainId
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -497,6 +501,248 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler
+// Daily Objectives endpoints
+
+// Get user's daily objectives
+app.get('/api/objectives/daily', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get all active daily objectives with user progress
+    const result = await pool.query(`
+      SELECT 
+        obj.id,
+        obj.name,
+        obj.description,
+        obj.requirement,
+        obj.reward_amount,
+        obj.icon,
+        COALESCE(prog.current_progress, 0) as current_progress,
+        COALESCE(prog.is_completed, false) as is_completed,
+        CASE 
+          WHEN prog.is_completed = true AND prog.completed_at IS NULL THEN true
+          ELSE false
+        END as can_claim
+      FROM daily_objectives obj
+      LEFT JOIN user_objective_progress prog ON obj.id = prog.objective_id 
+        AND prog.user_id = $1 AND prog.date = $2
+      WHERE obj.is_active = true
+      ORDER BY obj.id
+    `, [userId, today]);
+
+    res.json({
+      success: true,
+      objectives: result.rows
+    });
+  } catch (error) {
+    console.error('Get daily objectives error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Claim daily objective reward
+app.post('/api/objectives/claim/:objectiveId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const objectiveId = parseInt(req.params.objectiveId);
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get blockchain ID
+    const blockchainResult = await pool.query('SELECT blockchainid FROM blockchainid WHERE userid = $1', [userId]);
+    if (blockchainResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Blockchain ID not found' });
+    }
+    const blockchainId = blockchainResult.rows[0].blockchainid;
+
+    // Check if objective is completed and can be claimed
+    const progressResult = await pool.query(`
+      SELECT prog.*, obj.reward_amount 
+      FROM user_objective_progress prog
+      JOIN daily_objectives obj ON prog.objective_id = obj.id
+      WHERE prog.user_id = $1 AND prog.objective_id = $2 AND prog.date = $3
+        AND prog.is_completed = true AND prog.completed_at IS NULL
+    `, [userId, objectiveId, today]);
+
+    if (progressResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Objective not completed or already claimed' });
+    }
+
+    const objective = progressResult.rows[0];
+
+    // Award blockchain tokens
+    const response = await axios.post(`${BLOCKCHAIN_URL}/rewards/earn`, {
+      user_id: blockchainId,
+      amount: objective.reward_amount
+    });
+
+    // Mark as claimed
+    await pool.query(`
+      UPDATE user_objective_progress 
+      SET completed_at = NOW() 
+      WHERE user_id = $1 AND objective_id = $2 AND date = $3
+    `, [userId, objectiveId, today]);
+
+    res.json({
+      success: true,
+      message: `Claimed ${objective.reward_amount} coins!`,
+      new_balance: response.data.balance
+    });
+  } catch (error) {
+    console.error('Claim objective reward error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update objective progress
+app.post('/api/objectives/progress', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const { objectiveId, progress } = req.body;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get objective requirement
+    const objectiveResult = await pool.query('SELECT requirement FROM daily_objectives WHERE id = $1', [objectiveId]);
+    if (objectiveResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Objective not found' });
+    }
+    const requirement = objectiveResult.rows[0].requirement;
+
+    // Update or insert progress
+    const isCompleted = progress >= requirement;
+    await pool.query(`
+      INSERT INTO user_objective_progress (user_id, objective_id, current_progress, is_completed, date)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (user_id, objective_id, date)
+      DO UPDATE SET 
+        current_progress = GREATEST(user_objective_progress.current_progress, $3),
+        is_completed = $4 OR user_objective_progress.is_completed
+    `, [userId, objectiveId, progress, isCompleted, today]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update objective progress error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Achievements endpoints
+
+// Get user's achievements
+app.get('/api/achievements', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+
+    // Get all achievements with user unlock status
+    const result = await pool.query(`
+      SELECT 
+        a.id,
+        a.name,
+        a.description,
+        a.requirement_type,
+        a.requirement_value,
+        a.reward_amount,
+        a.icon,
+        CASE WHEN ua.id IS NOT NULL THEN true ELSE false END as is_unlocked,
+        CASE 
+          WHEN ua.id IS NOT NULL AND ua.unlocked_at IS NULL THEN true
+          ELSE false
+        END as can_claim
+      FROM achievements a
+      LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = $1
+      WHERE a.is_active = true
+      ORDER BY is_unlocked DESC, a.id
+    `, [userId]);
+
+    res.json({
+      success: true,
+      achievements: result.rows
+    });
+  } catch (error) {
+    console.error('Get achievements error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Unlock achievement
+app.post('/api/achievements/unlock/:achievementId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const achievementId = parseInt(req.params.achievementId);
+
+    // Check if already unlocked
+    const existingResult = await pool.query(
+      'SELECT id FROM user_achievements WHERE user_id = $1 AND achievement_id = $2',
+      [userId, achievementId]
+    );
+
+    if (existingResult.rows.length > 0) {
+      return res.status(400).json({ error: 'Achievement already unlocked' });
+    }
+
+    // Unlock achievement (without claiming reward yet)
+    await pool.query(
+      'INSERT INTO user_achievements (user_id, achievement_id, unlocked_at) VALUES ($1, $2, NULL)',
+      [userId, achievementId]
+    );
+
+    res.json({ success: true, message: 'Achievement unlocked!' });
+  } catch (error) {
+    console.error('Unlock achievement error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Claim achievement reward
+app.post('/api/achievements/claim/:achievementId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const achievementId = parseInt(req.params.achievementId);
+
+    // Get blockchain ID
+    const blockchainResult = await pool.query('SELECT blockchainid FROM blockchainid WHERE userid = $1', [userId]);
+    if (blockchainResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Blockchain ID not found' });
+    }
+    const blockchainId = blockchainResult.rows[0].blockchainid;
+
+    // Check if achievement is unlocked and can be claimed
+    const achievementResult = await pool.query(`
+      SELECT ua.*, a.reward_amount 
+      FROM user_achievements ua
+      JOIN achievements a ON ua.achievement_id = a.id
+      WHERE ua.user_id = $1 AND ua.achievement_id = $2 AND ua.unlocked_at IS NULL
+    `, [userId, achievementId]);
+
+    if (achievementResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Achievement not unlocked or already claimed' });
+    }
+
+    const achievement = achievementResult.rows[0];
+
+    // Award blockchain tokens
+    const response = await axios.post(`${BLOCKCHAIN_URL}/rewards/earn`, {
+      user_id: blockchainId,
+      amount: achievement.reward_amount
+    });
+
+    // Mark as claimed
+    await pool.query(
+      'UPDATE user_achievements SET unlocked_at = NOW() WHERE user_id = $1 AND achievement_id = $2',
+      [userId, achievementId]
+    );
+
+    res.json({
+      success: true,
+      message: `Claimed ${achievement.reward_amount} coins!`,
+      new_balance: response.data.balance
+    });
+  } catch (error) {
+    console.error('Claim achievement reward error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
