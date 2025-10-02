@@ -1,13 +1,112 @@
 import hashlib
 import json
+import os
 from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 
-
+import psycopg2
+import psycopg2.extras
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+
+# Load environment variables
+load_dotenv()
+
+# Database configuration
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432),
+    'database': os.getenv('DB_NAME', 'sud_hackathon'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', 'password')
+}
+
+class DatabaseManager:
+    def __init__(self):
+        self.connection = None
+        self.connect()
+    
+    def connect(self):
+        try:
+            self.connection = psycopg2.connect(**DB_CONFIG)
+            self.connection.autocommit = True
+            print("Connected to PostgreSQL database")
+        except Exception as e:
+            print(f"Error connecting to database: {e}")
+            self.connection = None
+    
+    def get_cursor(self):
+        if not self.connection:
+            self.connect()
+        return self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    
+    def save_block(self, block, block_hash):
+        try:
+            cursor = self.get_cursor()
+            # Insert block
+            cursor.execute("""
+                INSERT INTO blockchain_blocks (block_index, timestamp, proof, previous_hash, block_hash)
+                VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """, (block['index'], int(block['timestamp']), block['proof'], block['previous_hash'], block_hash))
+            
+            block_id = cursor.fetchone()['id']
+            
+            # Insert transactions
+            for tx in block['transactions']:
+                cursor.execute("""
+                    INSERT INTO blockchain_transactions (block_id, sender, recipient, amount)
+                    VALUES (%s, %s, %s, %s)
+                """, (block_id, tx['sender'], tx['recipient'], tx['amount']))
+            
+            cursor.close()
+            return block_id
+        except Exception as e:
+            print(f"Error saving block: {e}")
+            return None
+    
+    def load_blockchain(self):
+        try:
+            cursor = self.get_cursor()
+            # Load all blocks with their transactions
+            cursor.execute("""
+                SELECT b.*, array_agg(
+                    json_build_object(
+                        'sender', t.sender,
+                        'recipient', t.recipient,
+                        'amount', t.amount
+                    ) ORDER BY t.id
+                ) as transactions
+                FROM blockchain_blocks b
+                LEFT JOIN blockchain_transactions t ON b.id = t.block_id
+                GROUP BY b.id, b.block_index, b.timestamp, b.proof, b.previous_hash, b.block_hash
+                ORDER BY b.block_index
+            """)
+            
+            rows = cursor.fetchall()
+            cursor.close()
+            
+            chain = []
+            for row in rows:
+                block = {
+                    'index': row['block_index'],
+                    'timestamp': row['timestamp'],
+                    'transactions': row['transactions'] if row['transactions'][0] else [],
+                    'proof': row['proof'],
+                    'previous_hash': row['previous_hash']
+                }
+                chain.append(block)
+            
+            return chain
+        except Exception as e:
+            print(f"Error loading blockchain: {e}")
+            return []
 
 
 class Blockchain:
@@ -15,12 +114,16 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-
-        # Track user balances
-        self.balances = {}
-
-        # Create the genesis block
-        self.new_block(previous_hash='1', proof=100)
+        
+        # Initialize database manager
+        self.db = DatabaseManager()
+        
+        # Load existing blockchain from database
+        self.chain = self.db.load_blockchain()
+        
+        # Create the genesis block if no blocks exist
+        if not self.chain:
+            self.new_block(previous_hash='1', proof=100)
 
     def register_node(self, address):
         """
@@ -120,6 +223,12 @@ class Blockchain:
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
+        # Calculate block hash
+        block_hash = self.hash(block)
+        
+        # Save block to database
+        self.db.save_block(block, block_hash)
+
         # Reset the current list of transactions
         self.current_transactions = []
 
@@ -149,7 +258,9 @@ class Blockchain:
             for tx in block['transactions']:
                 sender = tx['sender']
                 recipient = tx['recipient']
-                amount = tx['amount']
+                amount = tx.get('amount', 0)  # Default to 0 if amount is None
+                if amount is None:
+                    amount = 0
                 if sender != "0":
                     balances[sender] = balances.get(sender, 0) - amount
                 balances[recipient] = balances.get(recipient, 0) + amount
@@ -327,7 +438,6 @@ def consensus():
 @app.route('/user/new', methods=['GET'])
 def new_user():
     user_id = str(uuid4()).replace('-', '')
-    blockchain.balances[user_id] = 0
     return jsonify({'user_id': user_id, 'balance': 0}), 200
 
 

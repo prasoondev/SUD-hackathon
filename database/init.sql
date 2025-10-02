@@ -20,11 +20,37 @@ CREATE TABLE IF NOT EXISTS blockchainid (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create blockchain_blocks table to store blockchain data persistently
+CREATE TABLE IF NOT EXISTS blockchain_blocks (
+    id SERIAL PRIMARY KEY,
+    block_index INTEGER NOT NULL,
+    timestamp BIGINT NOT NULL,
+    proof INTEGER NOT NULL,
+    previous_hash VARCHAR(64),
+    block_hash VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create blockchain_transactions table to store all transactions
+CREATE TABLE IF NOT EXISTS blockchain_transactions (
+    id SERIAL PRIMARY KEY,
+    block_id INTEGER REFERENCES blockchain_blocks(id) ON DELETE CASCADE,
+    sender VARCHAR(255) NOT NULL,
+    recipient VARCHAR(255) NOT NULL,
+    amount INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_blockchainid_userid ON blockchainid(userid);
 CREATE INDEX IF NOT EXISTS idx_blockchainid_blockchainid ON blockchainid(blockchainid);
+CREATE INDEX IF NOT EXISTS idx_blockchain_blocks_index ON blockchain_blocks(block_index);
+CREATE INDEX IF NOT EXISTS idx_blockchain_blocks_hash ON blockchain_blocks(block_hash);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_block ON blockchain_transactions(block_id);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_sender ON blockchain_transactions(sender);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_recipient ON blockchain_transactions(recipient);
 
 -- Create a function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
