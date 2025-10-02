@@ -7,6 +7,7 @@
 
 **YouMatter** is a comprehensive gamified wellness platform addressing YouMatter's engagement challenges through innovative behavioral psychology, social mechanics, and AI-powered personalization. Our solution drives user engagement through family-based guilds, blockchain rewards, and multi-tier competition systems.
 
+![alt text](image.png)
 ---
 
 ## 🥽 AR & 3D Exercise Features (Technical Implementation)
@@ -31,6 +32,11 @@ Our platform implements **Google Model Viewer** with WebGL for immersive 3D exer
 ```
 
 ### 🎪 AR-Enabled Exercise Library
+
+
+![alt text](image-1.png)
+
+
 **Implemented AR Exercises with 3D Models**:
 
 #### **Cardio Category** (`CardioExercises.tsx`)
@@ -187,6 +193,8 @@ class DatabaseManager:
 ---
 
 ## 🎮 Gaming Mechanics Implementation
+
+![alt text](image-2.png)
 
 ### 🏆 Points & Progression System
 
