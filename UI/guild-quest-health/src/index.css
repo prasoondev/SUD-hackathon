@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 150 35% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 80% 90%;
+    --secondary-foreground: 215 25% 15%;
+
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 350 75% 75%;
+    --accent-foreground: 215 25% 15%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 92%;
+    --ring: 150 35% 55%;
+
+    --radius: 1rem;
+
+    /* Wellness theme colors */
+    --activity: 350 75% 75%;
+    --activity-foreground: 350 60% 25%;
+    
+    --wellness: 150 35% 55%;
+    --wellness-foreground: 150 40% 20%;
+    
+    --sleep: 200 70% 65%;
+    --sleep-foreground: 200 60% 25%;
+    
+    --mind: 260 50% 65%;
+    --mind-foreground: 260 50% 25%;
+    
+    --hydration: 195 75% 60%;
+    --hydration-foreground: 195 65% 25%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(150 35% 55%), hsl(150 45% 65%));
+    --gradient-activity: linear-gradient(135deg, hsl(350 75% 75%), hsl(350 75% 85%));
+    --gradient-wellness: linear-gradient(135deg, hsl(150 35% 55%), hsl(150 45% 65%));
+    --gradient-sleep: linear-gradient(135deg, hsl(200 70% 65%), hsl(200 70% 75%));
+    --gradient-mind: linear-gradient(135deg, hsl(260 50% 65%), hsl(260 50% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(150, 37%, 51%), hsl(200 70% 65%));
+
+    /* Shadows */
+    --shadow-soft: 0 2px 20px -5px hsl(215 25% 15% / 0.08);
+    --shadow-medium: 0 4px 30px -8px hsl(215 25% 15% / 0.12);
+    --shadow-elevated: 0 8px 40px -10px hsl(215 25% 15% / 0.15);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    --background: 215 30% 8%;
+    --foreground: 210 20% 98%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 150 35% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 25% 15%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 350 75% 70%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --ring: 150 35% 55%;
+
+    --activity: 350 75% 70%;
+    --wellness: 150 35% 55%;
+    --sleep: 200 70% 60%;
+    --mind: 260 50% 60%;
+    --hydration: 195 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
