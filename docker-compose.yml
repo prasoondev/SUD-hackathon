@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: guild_quest_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: guild_quest
+      POSTGRES_USER: guild_user
+      POSTGRES_PASSWORD: guild_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - guild_quest_network
+
+  # Blockchain Service
+  blockchain:
+    build: ./blockchain
+    container_name: guild_quest_blockchain
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    networks:
+      - guild_quest_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: guild_quest_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: guild_quest
+      DB_USER: guild_user
+      DB_PASSWORD: guild_password
+      JWT_SECRET: your_jwt_secret_here_change_in_production
+      BLOCKCHAIN_URL: http://blockchain:5000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - blockchain
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - guild_quest_network
+
+  # Frontend (optional, for production)
+  frontend:
+    build: ./UI/guild-quest-health
+    container_name: guild_quest_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    networks:
+      - guild_quest_network
+
+volumes:
+  postgres_data:
+
+networks:
+  guild_quest_network:
+    driver: bridge

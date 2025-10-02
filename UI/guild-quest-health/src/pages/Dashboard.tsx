@@ -1,8 +1,11 @@
-import { Bell, Footprints, Moon, Droplets, Dumbbell, Brain, Sparkles } from "lucide-react";
+import { Bell, Footprints, Moon, Droplets, Dumbbell, Brain, Sparkles, User } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { GuildProgress } from "@/components/GuildProgress";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { dbService } from "@/lib/database";
+import { useState, useEffect } from "react";
 
 const recommendations = [
   {
@@ -29,6 +32,29 @@ const recommendations = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [balance, setBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (user) {
+        try {
+          const result = await dbService.getBalance();
+          if (result.success && result.balance !== undefined) {
+            setBalance(result.balance);
+          }
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+        } finally {
+          setBalanceLoading(false);
+        }
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
+  
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -37,12 +63,14 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm opacity-90">Welcome back,</p>
-              <h1 className="text-2xl font-bold">Harish</h1>
+              <h1 className="text-2xl font-bold">{user?.name || 'User'}</h1>
             </div>
             <div className="flex items-center gap-3">
               <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                <span className="font-bold">1,245</span>
+                <span className="font-bold">
+                  {balanceLoading ? '...' : balance.toLocaleString()}
+                </span>
               </div>
               <Button size="icon" variant="ghost" className="rounded-full hover:bg-primary-foreground/20">
                 <Bell className="h-5 w-5" />
