@@ -8,6 +8,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Training from "./pages/Training";
+import CardioExercises from "./pages/CardioExercises";
+import StrengthExercises from "./pages/StrengthExercises";
+import YogaExercises from "./pages/YogaExercises";
+import SitupsExercise from "./pages/SitupsExercise";
+import GenericExercise from "./pages/GenericExercise";
 import Leagues from "./pages/Leagues";
 import Trophies from "./pages/Trophies";
 import NotFound from "./pages/NotFound";
@@ -21,19 +26,58 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ProtectedRoute>
-            <div className="w-full">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/training" element={<Training />} />
-                <Route path="/leagues" element={<Leagues />} />
-                <Route path="/trophies" element={<Trophies />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <BottomNav />
-            </div>
-          </ProtectedRoute>
+          <div className="w-full">
+            <Routes>
+              {/* All routes now require authentication */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/training" element={
+                <ProtectedRoute>
+                  <Training />
+                </ProtectedRoute>
+              } />
+              <Route path="/training/cardio" element={
+                <ProtectedRoute>
+                  <CardioExercises />
+                </ProtectedRoute>
+              } />
+              <Route path="/training/strength" element={
+                <ProtectedRoute>
+                  <StrengthExercises />
+                </ProtectedRoute>
+              } />
+              <Route path="/training/yoga" element={
+                <ProtectedRoute>
+                  <YogaExercises />
+                </ProtectedRoute>
+              } />
+              <Route path="/exercise/situps" element={
+                <ProtectedRoute>
+                  <SitupsExercise />
+                </ProtectedRoute>
+              } />
+              <Route path="/exercise/:exerciseId" element={
+                <ProtectedRoute>
+                  <GenericExercise />
+                </ProtectedRoute>
+              } />
+              <Route path="/leagues" element={
+                <ProtectedRoute>
+                  <Leagues />
+                </ProtectedRoute>
+              } />
+              <Route path="/trophies" element={
+                <ProtectedRoute>
+                  <Trophies />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <BottomNav />
+          </div>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

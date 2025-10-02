@@ -1,0 +1,61 @@
+/* AR Model Viewer Styles */
+model-viewer {
+  background-color: transparent;
+}
+
+model-viewer::part(default-ar-button) {
+  background-color: #4f46e5;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+model-viewer::part(default-ar-button):hover {
+  background-color: #4338ca;
+}
+
+model-viewer::part(default-ar-button):active {
+  background-color: #3730a3;
+}
+
+/* Loading indicator */
+model-viewer::part(default-progress-mask) {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+model-viewer::part(default-progress-bar) {
+  background-color: #4f46e5;
+}
+
+/* Annotation styles */
+model-viewer .Hotspot {
+  background: #4f46e5;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  height: 20px;
+  width: 20px;
+}
+
+model-viewer .HotspotAnnotation {
+  background: #4f46e5;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: white;
+  display: block;
+  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  left: calc(100% + 1em);
+  max-width: 200px;
+  overflow-wrap: break-word;
+  padding: 0.5em 1em;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: pre-line;
+  z-index: 100;
+}

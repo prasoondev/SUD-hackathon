@@ -1,5 +1,6 @@
-import { Dumbbell, Heart, Zap, Wind, Bike, PersonStanding } from "lucide-react";
+import { Dumbbell, Heart, Zap, Wind, Bike, PersonStanding, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const exerciseCategories = [
   {
@@ -9,30 +10,38 @@ const exerciseCategories = [
     duration: "15-30 min",
     points: "40-80",
     color: "activity",
+    route: null,
+    hasAR: false,
   },
   {
     icon: Dumbbell,
     title: "Strength",
-    exercises: 18,
-    duration: "20-45 min",
-    points: "50-100",
+    exercises: 3,
+    duration: "15-30 min",
+    points: "105",
     color: "wellness",
+    route: "/training/strength",
+    hasAR: true,
   },
   {
     icon: Wind,
     title: "Yoga",
-    exercises: 15,
-    duration: "15-60 min",
-    points: "30-90",
+    exercises: 1,
+    duration: "5-10 min",
+    points: "20",
     color: "mind",
+    route: "/training/yoga",
+    hasAR: true,
   },
   {
     icon: Bike,
     title: "Cardio",
-    exercises: 10,
+    exercises: 5,
     duration: "20-40 min",
     points: "45-85",
     color: "activity",
+    route: "/training/cardio",
+    hasAR: true,
   },
   {
     icon: PersonStanding,
@@ -41,6 +50,8 @@ const exerciseCategories = [
     duration: "10-25 min",
     points: "25-60",
     color: "sleep",
+    route: null,
+    hasAR: false,
   },
   {
     icon: Heart,
@@ -49,6 +60,8 @@ const exerciseCategories = [
     duration: "15-30 min",
     points: "20-50",
     color: "wellness",
+    route: null,
+    hasAR: false,
   },
 ];
 
@@ -60,6 +73,13 @@ const colorStyles = {
 };
 
 export default function Training() {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (category: typeof exerciseCategories[0]) => {
+    if (category.route) {
+      navigate(category.route);
+    }
+  };
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -104,36 +124,50 @@ export default function Training() {
                     transition-all duration-300 hover:scale-105 cursor-pointer
                     animate-fade-in bg-gradient-to-br
                     ${colorStyles[category.color as keyof typeof colorStyles]}
+                    ${!category.route ? 'opacity-60' : ''}
                   `}
                   style={{ animationDelay: `${index * 0.1}s` }}
+                  onClick={() => handleCategoryClick(category)}
                 >
-                  <Icon className="h-8 w-8 mb-3 opacity-90" />
+                  <div className="flex items-center justify-between mb-3">
+                    <Icon className="h-8 w-8 opacity-90" />
+                    {category.hasAR && (
+                      <div className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
+                        <Camera className="h-3 w-3 inline mr-1" />
+                        AR
+                      </div>
+                    )}
+                  </div>
                   <h3 className="font-bold text-foreground mb-2">{category.title}</h3>
                   <div className="space-y-1 text-xs opacity-75">
                     <p>{category.exercises} exercises</p>
                     <p>{category.duration}</p>
                     <p className="font-semibold text-primary">{category.points} points</p>
                   </div>
+                  {!category.route && (
+                    <div className="mt-2 text-xs text-muted-foreground">Coming Soon</div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* AR Form Coach Teaser */}
+        {/* AR Form Coach Feature */}
         <div className="bg-card rounded-2xl p-6 shadow-soft border border-border">
           <div className="flex items-start gap-4">
-            <div className="bg-gradient-primary rounded-xl p-3">
-              <Zap className="h-6 w-6 text-primary-foreground" />
+            <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl p-3">
+              <Camera className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-1">AR Form Coach</h3>
+              <h3 className="font-semibold text-foreground mb-1">3D AR Form Coach</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Get real-time feedback on your exercise form with AI-powered pose detection.
+                Experience interactive 3D exercise models with augmented reality support. 
+                Perfect your form with real-time visual guidance.
               </p>
-              <Button variant="outline" size="sm" disabled>
-                Coming Soon
-              </Button>
+              <div className="text-xs text-muted-foreground">
+                Available in Cardio, Strength, and Yoga categories
+              </div>
             </div>
           </div>
         </div>

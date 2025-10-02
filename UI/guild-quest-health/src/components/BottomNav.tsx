@@ -13,7 +13,7 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated z-50">
@@ -49,15 +49,17 @@ export function BottomNav() {
           );
         })}
         
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => logout()}
-          className="flex flex-col items-center justify-center flex-1 py-2 px-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50"
-        >
-          <LogOut className="h-6 w-6 mb-1" />
-          <span className="text-xs font-medium">Logout</span>
-        </Button>
+        {user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => logout()}
+            className="flex flex-col items-center justify-center flex-1 py-2 px-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <LogOut className="h-6 w-6 mb-1" />
+            <span className="text-xs font-medium">Logout</span>
+          </Button>
+        )}
       </div>
     </nav>
   );
