@@ -1,8 +1,11 @@
-# Guild Quest Health: YouMatter Gamification Challenge Solution
+# YouMatter Gamification Challenge Solution
+
+## Team name: abcd
+## Team: Bhavya Ahuja, Prasoon Dev
 
 ## 🏆 Executive Summary
 
-**Guild Quest Health** is a comprehensive gamified wellness platform addressing YouMatter's engagement challenges through innovative behavioral psychology, social mechanics, and AI-powered personalization. Our solution drives user engagement through family-based guilds, blockchain rewards, and multi-tier competition systems.
+**YouMatter** is a comprehensive gamified wellness platform addressing YouMatter's engagement challenges through innovative behavioral psychology, social mechanics, and AI-powered personalization. Our solution drives user engagement through family-based guilds, blockchain rewards, and multi-tier competition systems.
 
 ---
 
@@ -249,7 +252,7 @@ const percentage = Math.min((currentPoints / goalPoints) * 100, 100);
 
 ### 🚀 New User Onboarding Journey
 
-#### **Story 1: Sarah discovers Guild Quest Health**
+#### **Story 1: Sarah discovers YouMatter**
 ```
 As a busy working mother,
 I want to stay fit while involving my family,
@@ -446,7 +449,7 @@ Blockchain:   http://localhost:5000  (Flask API + demo interface)
 4. **Family Gamification**: Social mechanics driving engagement through competition
 5. **Enterprise Architecture**: Scalable Docker deployment with B2B integration ready
 
-**Guild Quest Health successfully demonstrates how AR technology, blockchain transparency, and AI personalization can transform wellness engagement through family-centered gamification mechanics.**
+**YouMatter successfully demonstrates how AR technology, blockchain transparency, and AI personalization can transform wellness engagement through family-centered gamification mechanics.**
 
 ---
 
