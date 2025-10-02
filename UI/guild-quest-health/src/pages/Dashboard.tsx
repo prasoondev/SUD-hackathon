@@ -1,14 +1,14 @@
-import { Bell, Footprints, Moon, Droplets, Dumbbell, Brain, Sparkles, Gift, Trophy } from "lucide-react";
+import { Bell, Footprints, Moon, Droplets, Dumbbell, Brain, Sparkles, User } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { RecommendationCard } from "@/components/RecommendationCard";
+import { SmartRecommendationCard } from "@/components/SmartRecommendationCard";
+import { Chatbot } from "@/components/Chatbot";
+import { GuildProgress } from "@/components/GuildProgress";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { dbService } from "@/lib/database";
+import { geminiService, ExerciseRecommendation, UserStats } from "@/lib/ai-service";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
 
 const recommendations = [
   {
@@ -36,119 +36,63 @@ const recommendations = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [balance, setBalance] = useState<number>(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
-  const [objectives, setObjectives] = useState<any[]>([]);
-  const [achievements, setAchievements] = useState<any[]>([]);
-  const [objectivesLoading, setObjectivesLoading] = useState(true);
-  const [achievementsLoading, setAchievementsLoading] = useState(true);
+  const [smartRecommendations, setSmartRecommendations] = useState<ExerciseRecommendation[]>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+
+  // Current user stats (hardcoded for demo, can be made dynamic)
+  const userStats: UserStats = {
+    steps: 8234,
+    stepGoal: 10000,
+    exerciseMinutes: 25,
+    exerciseCount: 3,
+    sleepHours: 7.5,
+    hydrationLiters: 1.8,
+    hydrationGoal: 2.5,
+    mindScore: 82,
+    wellnessScore: 75,
+    balance: balance,
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBalance = async () => {
       if (user) {
         try {
-          // Fetch balance
-          const balanceResult = await dbService.getBalance();
-          if (balanceResult.success && balanceResult.balance !== undefined) {
-            setBalance(balanceResult.balance);
-          }
-
-          // Fetch daily objectives
-          const objectivesResult = await dbService.getDailyObjectives();
-          if (objectivesResult.success && objectivesResult.objectives) {
-            setObjectives(objectivesResult.objectives);
-          }
-
-          // Fetch achievements
-          const achievementsResult = await dbService.getAchievements();
-          if (achievementsResult.success && achievementsResult.achievements) {
-            setAchievements(achievementsResult.achievements);
+          const result = await dbService.getBalance();
+          if (result.success && result.balance !== undefined) {
+            setBalance(result.balance);
           }
         } catch (error) {
-          console.error('Error fetching data:', error);
+          console.error('Error fetching balance:', error);
         } finally {
           setBalanceLoading(false);
-          setObjectivesLoading(false);
-          setAchievementsLoading(false);
         }
       }
     };
 
-    fetchData();
+    fetchBalance();
   }, [user]);
 
-  const completedObjectives = objectives.filter(obj => obj.is_completed).length;
-  const totalObjectives = objectives.length;
-  const unlockedAchievements = achievements.filter(ach => ach.is_unlocked).length;
-
-  const handleClaimObjectiveReward = async (objectiveId: number) => {
-    try {
-      const result = await dbService.claimObjectiveReward(objectiveId);
-      if (result.success) {
-        toast({
-          title: "Reward Claimed!",
-          description: result.message,
-        });
-        if (result.newBalance !== undefined) {
-          setBalance(result.newBalance);
+  useEffect(() => {
+    const generateSmartRecommendations = async () => {
+      if (user) {
+        setRecommendationsLoading(true);
+        try {
+          // Update userStats with current balance for rule-based recommendations
+          const currentUserStats = { ...userStats, balance };
+          const recommendations = await geminiService.generateExerciseRecommendations(currentUserStats);
+          setSmartRecommendations(recommendations);
+        } catch (error) {
+          console.error('Error generating smart recommendations:', error);
+        } finally {
+          setRecommendationsLoading(false);
         }
-        // Update objectives to reflect claimed state
-        setObjectives(prev => prev.map(obj => 
-          obj.id === objectiveId 
-            ? { ...obj, can_claim: false }
-            : obj
-        ));
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to claim reward",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error('Error claiming objective reward:', error);
-      toast({
-        title: "Error",
-        description: "Failed to claim reward",
-        variant: "destructive",
-      });
-    }
-  };
+    };
 
-  const handleClaimAchievementReward = async (achievementId: number) => {
-    try {
-      const result = await dbService.claimAchievementReward(achievementId);
-      if (result.success) {
-        toast({
-          title: "Achievement Reward Claimed!",
-          description: result.message,
-        });
-        if (result.newBalance !== undefined) {
-          setBalance(result.newBalance);
-        }
-        // Update achievements to reflect claimed state
-        setAchievements(prev => prev.map(ach => 
-          ach.id === achievementId 
-            ? { ...ach, can_claim: false }
-            : ach
-        ));
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to claim achievement reward",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error claiming achievement reward:', error);
-      toast({
-        title: "Error",
-        description: "Failed to claim achievement reward",
-        variant: "destructive",
-      });
-    }
-  };
+    generateSmartRecommendations();
+  }, [user, balance]); // Re-generate when balance updates
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -176,51 +120,14 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-md mx-auto px-4 -mt-4">
-        {/* Rewards Overview */}
+        {/* Guild Progress */}
         <div className="mb-6">
-          <Card className="p-4 bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Gift className="h-5 w-5 text-primary" />
-                Rewards Overview
-              </h2>
-              <Link to="/rewards">
-                <Button size="sm" variant="outline">
-                  View All
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-xl font-bold text-foreground">
-                  {completedObjectives}/{totalObjectives}
-                </p>
-                <p className="text-sm text-muted-foreground">Daily Objectives</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                </div>
-                <p className="text-xl font-bold text-foreground">{unlockedAchievements}</p>
-                <p className="text-sm text-muted-foreground">Achievements</p>
-              </div>
-            </div>
-            
-            {(objectives.some(obj => obj.can_claim) || achievements.some(ach => ach.can_claim)) && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">
-                    You have rewards ready to claim!
-                  </span>
-                </div>
-              </div>
-            )}
-          </Card>
+          <GuildProgress
+            guildName="The Active Avengers"
+            currentPoints={8420}
+            goalPoints={12000}
+            memberCount={12}
+          />
         </div>
 
         {/* Stats Grid */}
@@ -281,12 +188,73 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* AI Recommendations */}
+        {/* Smart Recommendations Based on Exercise History */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               Recommended for You
+            </h2>
+            {!recommendationsLoading && smartRecommendations.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={async () => {
+                  setRecommendationsLoading(true);
+                  try {
+                    const currentUserStats = { ...userStats, balance };
+                    const newRecommendations = await geminiService.generateExerciseRecommendations(currentUserStats);
+                    setSmartRecommendations(newRecommendations);
+                  } catch (error) {
+                    console.error('Error regenerating recommendations:', error);
+                  } finally {
+                    setRecommendationsLoading(false);
+                  }
+                }}
+                className="text-primary hover:text-primary/80"
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
+            {recommendationsLoading || smartRecommendations.length === 0 ? (
+              <>
+                <SmartRecommendationCard 
+                  recommendation={{} as ExerciseRecommendation} 
+                  isLoading={true} 
+                />
+                <SmartRecommendationCard 
+                  recommendation={{} as ExerciseRecommendation} 
+                  isLoading={true} 
+                />
+                <SmartRecommendationCard 
+                  recommendation={{} as ExerciseRecommendation} 
+                  isLoading={true} 
+                />
+              </>
+            ) : (
+              smartRecommendations.map((rec, index) => (
+                <SmartRecommendationCard 
+                  key={index} 
+                  recommendation={rec}
+                  onStart={() => {
+                    // Navigate to appropriate exercise page or show exercise details
+                    console.log('Starting exercise:', rec.title);
+                  }}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Static Recommendations (Fallback) */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              Quick Activities
             </h2>
           </div>
           
@@ -311,6 +279,9 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* AI Health Coach Chatbot */}
+        <Chatbot userStats={userStats} />
       </div>
     </div>
   );
